@@ -1,4 +1,4 @@
-# Strong Consistency Distributed Key-Value Store
+# Strongly Consistent Distributed Key-Value Store
 
 **Project directory:** `strong-consistency/`
 
@@ -37,6 +37,81 @@ Clients ──▶ Primary Node  │
           └───────────────┘        (HTTP)
 
 ```
+
+## 🧪 REST API
+
+This key-value store exposes the following endpoints:
+
+### `GET /ping`
+- **Purpose**: Health check endpoint.
+
+- **Response**: `200 OK` if the node is initialized and ready.
+
+### `PUT /data/<key>`
+
+- **Body**:
+    ```json
+    {
+    "value": "some string"
+    }
+    ```
+- **Purpose**: Creates or updates a key-value pair.
+
+- **Returns**:
+
+    - `201 Created` if the key is new
+
+    - `200 OK` if the key is updated
+
+- Error: `400 Bad Request` if the body is missing from the PUT request or isn’t valid json in the form expected
+
+### `GET /data/<key>`
+- **Purpose**: Returns the value associated with the key
+
+- **Returns**:
+
+    - `200 OK` with:
+
+        ```json
+        { "value": "..." }
+        ```
+    - `404 Not Found` if the key doesn't exist
+
+### `DELETE /data/<key>`
+- **Purpose**: Deletes the key if it exists
+
+- **Returns**:
+
+    - `200 OK` if the key existed and was deleted
+
+    - `404 Not Found` if the key was not present
+
+### `GET /data`
+- **Purpose**: Returns a full key-value snapshot of the key-value store
+
+- **Returns**:
+    ```json
+    {
+        "key1": "value1",
+        "key2": "value2",
+        ...
+    }
+    ```
+
+### `PUT /view`
+- **Body**:
+    ```json
+    {
+        "view": [
+            { "address": "172.4.0.1:8081", "id": 1 },
+            { "address": "172.4.0.2:8081", "id": 2 },
+            ...
+        ]
+    }
+    ```
+- **Purpose**: Sent to all nodes; updating each node with information on the nodes that are currently active
+
+- **Returns**: `200 OK` once view is acknowledged
 
 ## ⚙️ Development Setup
 

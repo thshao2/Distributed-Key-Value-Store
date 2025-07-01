@@ -1,4 +1,4 @@
-# Sharded Causal Key-Value Store
+# Highly Available, Causally Consistent Distributed Key-Value Store
 
 **Project directory:** `sharded-causal-kv-store/`
 
@@ -39,6 +39,110 @@ This means:
   Provides endpoints for reading, writing, deleting, and managing the distributed cluster state.
 
 ---
+
+## 🧪 REST API
+
+This key-value store exposes the following endpoints:
+
+### `GET /ping`
+- **Purpose**: Health check endpoint.
+
+- **Response**: `200 OK` if the node is initialized and ready.
+
+### `PUT /data/<key>`
+
+- **Body**:
+    ```json
+    {
+    "value": "some string value",
+    "causal-metadata": { ... }
+    }
+    ```
+- **Purpose**: Creates or updates a key-value pair, propagating causal metadata.
+
+- **Returns**:
+
+    - `200 OK` with updated `causal-metadata`
+
+- **Response**:
+    ```json
+    {
+    "causal-metadata": { ... }
+    }
+    ```
+
+- Error: `400 Bad Request` if the body is missing from the PUT request or isn’t valid json in the form expected
+
+*Requests for keys not belonging to the local shard are transparently forwarded to the correct node.*
+
+### `GET /data/<key>`
+- **Purpose**: Returns the value associated with the key, respecting causal dependencies.
+
+- **Body**:
+    ```json
+    {
+    "causal-metadata": { ... }
+    }
+    ```
+- **Response**:
+    ```json
+    {
+    "value": "some string value",
+    "causal-metadata": { ... }
+    }
+    ```
+
+- **Returns**:
+
+    - `200 OK` if key exists
+    - `404 Not Found` if the key doesn't exist (with unchanged causal metadata)
+
+
+### `GET /data`
+- **Purpose**:  Returns all keys currently stored *on this node’s shard* that are causally safe to return.
+
+- **Body**:
+    ```json
+    {
+    "causal-metadata": { ... }
+    }
+    ```
+
+- **Response**:
+    ```json
+    {
+        "items": {
+            "key1": "val1",
+            "key2": "val2",
+            ...
+        },
+        "causal-metadata": { ... }
+    }
+    ```
+
+### `PUT /view`
+- **Body**:
+    ```json
+    {
+        "view": {
+            "Shard1": [
+            { "address": "172.4.0.4:8081", "id": 4 },
+            { "address": "172.4.0.2:8081", "id": 2 }
+            ],
+            "Shard2": [
+            { "address": "172.4.0.3:8081", "id": 3 }
+            ]
+        }
+    }
+    ```
+- **Purpose**: Updates the cluster view to a new sharded configuration
+
+- **Returns**: `200 OK` once the node is ready to serve the new view
+
+- **Effect**:
+    - Triggers resharding of data across the system.
+
+    - All nodes involved must acknowledge the change before requests resume.
 
 ## ⚙️ Development Setup
 
